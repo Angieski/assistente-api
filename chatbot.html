@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Widget</title>
+    <style>
+        /* Estilos gerais */
+        body {
+            font-family: sans-serif;
+        }
+
+        /* O balão do chat no canto da tela */
+        #chat-bubble {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background-color: #007bff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        #chat-bubble:hover {
+            transform: scale(1.1);
+        }
+        #chat-bubble svg {
+            width: 32px;
+            height: 32px;
+            fill: white;
+        }
+
+        /* A janela de chat principal */
+        #chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 350px;
+            height: 500px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Começa escondido */
+            transform: scale(0);
+            transform-origin: bottom right;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #chat-window.open {
+            transform: scale(1);
+        }
+
+        /* Cabeçalho do chat */
+        #chat-header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+        #chat-header p { margin: 0; }
+
+        /* Área das mensagens */
+        #chat-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Estilo das mensagens */
+        .message {
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #e9e9eb;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .assistant-message {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .assistant-message.thinking {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dot-flashing {
+            position: relative;
+            width: 5px; height: 5px;
+            border-radius: 5px;
+            background-color: rgba(255,255,255,0.8);
+            color: rgba(255,255,255,0.8);
+            animation: dot-flashing 1s infinite linear alternate;
+            animation-delay: .5s;
+        }
+        .dot-flashing::before, .dot-flashing::after {
+            content: '';
+            display: inline-block;
+            position: absolute;
+            top: 0;
+            width: 5px; height: 5px;
+            border-radius: 5px;
+            background-color: rgba(255,255,255,0.8);
+            color: rgba(255,255,255,0.8);
+        }
+        .dot-flashing::before {
+            left: -10px;
+            animation: dot-flashing 1s infinite alternate;
+            animation-delay: 0s;
+        }
+        .dot-flashing::after {
+            left: 10px;
+            animation: dot-flashing 1s infinite alternate;
+            animation-delay: 1s;
+        }
+        @keyframes dot-flashing {
+            0% { background-color: rgba(255,255,255,0.8); }
+            50%, 100% { background-color: rgba(255,255,255,0.2); }
+        }
+
+
+        /* Formulário de entrada */
+        #chat-input-form {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #f0f0f0;
+        }
+        #chat-input {
+            flex-grow: 1;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 10px 15px;
+            outline: none;
+        }
+        #chat-input-form button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+        #chat-input-form button svg {
+            width: 24px;
+            height: 24px;
+            fill: #007bff;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="chat-bubble">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"></path></svg>
+    </div>
+
+    <div id="chat-window">
+        <div id="chat-header">
+            <p>Assistente Técnico</p>
+        </div>
+        <div id="chat-messages">
+            </div>
+        <form id="chat-input-form">
+            <input type="text" id="chat-input" placeholder="Digite sua pergunta..." autocomplete="off">
+            <button type="submit">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // Esta parte é a inteligência do "Rosto" do seu chatbot
+
+        // --- CONFIGURAÇÃO ---
+        // Se você publicar sua API, troque esta URL pela URL pública.
+        const API_URL = "http://127.0.0.1:5000/ask";
+
+        // --- REFERÊNCIAS AOS ELEMENTOS HTML ---
+        const chatWindow = document.getElementById('chat-window');
+        const chatBubble = document.getElementById('chat-bubble');
+        const messagesContainer = document.getElementById('chat-messages');
+        const inputForm = document.getElementById('chat-input-form');
+        const inputField = document.getElementById('chat-input');
+
+        // --- LÓGICA DE ABRIR E FECHAR O CHAT ---
+        chatBubble.addEventListener('click', () => {
+            chatWindow.classList.toggle('open');
+        });
+
+        // --- LÓGICA DE ENVIO DE MENSAGEM ---
+        inputForm.addEventListener('submit', event => {
+            event.preventDefault(); // Impede o recarregamento da página
+            const userMessage = inputField.value.trim();
+            if (userMessage) {
+                sendMessage(userMessage);
+                inputField.value = '';
+            }
+        });
+
+        // Função para adicionar uma mensagem à tela
+        function addMessage(text, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', `${sender}-message`);
+            messageElement.textContent = text;
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; // Rola para o final
+            return messageElement;
+        }
+        
+        // Função principal que envia a pergunta para a API
+        async function sendMessage(userMessage) {
+            // Mostra a mensagem do usuário na tela
+            addMessage(userMessage, 'user');
+            
+            // Cria e mostra o indicador de "pensando..."
+            const thinkingMessage = addMessage('', 'assistant');
+            thinkingMessage.classList.add('thinking');
+            thinkingMessage.innerHTML = '<div class="dot-flashing"></div>';
+
+            try {
+                // Faz a chamada para a nossa API Python
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: userMessage
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro na API: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                // Remove a mensagem de "pensando..."
+                messagesContainer.removeChild(thinkingMessage);
+                // Adiciona a resposta final do assistente
+                addMessage(data.answer, 'assistant');
+
+            } catch (error) {
+                console.error("Erro ao contatar a API:", error);
+                // Remove a mensagem de "pensando..."
+                messagesContainer.removeChild(thinkingMessage);
+                // Adiciona uma mensagem de erro
+                addMessage("Desculpe, ocorreu um erro de conexão com o assistente. Tente novamente.", 'assistant');
+            }
+        }
+    </script>
+
+</body>
+</html>
