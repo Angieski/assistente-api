@@ -10,7 +10,7 @@ from trafilatura import fetch_url, extract
 from groq import Groq
 
 # --- CONFIGURAÇÕES E INICIALIZAÇÃO ---
-print("Iniciando a configuração do servidor (VERSÃO LEVE)...")
+print("Iniciando a configuração do servidor (VERSÃO LEVE PARA DEPLOY)...")
 
 try:
     client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
@@ -19,10 +19,9 @@ except Exception as e:
     print(f"ERRO: Chave da API da Groq não encontrada. Configure a variável de ambiente. Erro: {e}")
     client = None
 
+# As linhas que carregavam os modelos pesados foram removidas daqui para economizar memória na inicialização.
+
 # --- FUNÇÕES DE LÓGICA DA IA (O CÉREBRO) ---
-# A busca local está desativada nesta versão de diagnóstico
-def buscar_contexto_local(pergunta, top_k=3):
-    return ""
 
 def buscar_na_web(pergunta, num_artigos=1):
     print(f"Iniciando busca na web para: '{pergunta}'")
@@ -76,6 +75,11 @@ def obter_resposta_generativa(pergunta_atual, historico, contexto):
 app = Flask(__name__)
 CORS(app)
 
+# Rota de verificação de status
+@app.route('/')
+def health_check():
+    return "API do assistente (versão leve) está no ar e funcionando!"
+
 @app.route('/ask', methods=['POST'])
 def ask_assistant():
     data = request.get_json()
@@ -91,6 +95,5 @@ def ask_assistant():
         
     return jsonify({"answer": resposta_final})
 
-# A linha abaixo não é usada pelo Gunicorn, mas é boa para testes locais
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
