@@ -1,6 +1,4 @@
 Flask
 Flask-Cors
-groq
 gunicorn
-duckduckgo-search
-trafilatura
+groq
