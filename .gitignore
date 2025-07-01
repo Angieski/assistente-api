@@ -5,8 +5,8 @@ __pycache__/
 *.pyc
 
 # Arquivos de Índice gerados pela nossa IA
-*.bin
-*.pkl
+#*.bin
+#*.pkl
 
 # Arquivos de diagnóstico que criamos
 diagnostico_texto_bruto.txt
