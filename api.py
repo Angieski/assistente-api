@@ -1,57 +1,73 @@
 import os
+import pickle
+import faiss
+import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from sentence_transformers import SentenceTransformer
+from duckduckgo_search import DDGS
+from trafilatura import fetch_url, extract
 from groq import Groq
 
 # --- CONFIGURAÇÕES E INICIALIZAÇÃO ---
-print("Iniciando a configuração do servidor (VERSÃO ULTRA-LEVE)...")
+print("Iniciando a configuração do servidor (VERSÃO FINAL)...")
 
 NOME_MANUAL_LIMPO = "manual_limpo.txt"
-CONTEUDO_MANUAL = ""
+NOME_ARQUIVO_INDICE = "indice_faiss.bin"
+NOME_ARQUIVO_CHUNKS = "chunks.pkl"
+MODELO_EMBEDDING = 'all-MiniLM-L6-v2' # Usando o modelo leve e otimizado
 
 try:
     client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
     print("Cliente da API da Groq configurado.")
 except Exception as e:
-    print(f"ERRO: Chave da API da Groq não encontrada. Erro: {e}")
+    print(f"ERRO: Chave da API da Groq não encontrada. Configure a variável de ambiente. Erro: {e}")
     client = None
 
-# Carrega o conteúdo do manual na memória uma única vez
-if os.path.exists(NOME_MANUAL_LIMPO):
-    with open(NOME_MANUAL_LIMPO, "r", encoding="utf-8") as f:
-        CONTEUDO_MANUAL = f.read()
-    print(f"Manual '{NOME_MANUAL_LIMPO}' carregado na memória.")
-else:
-    print(f"AVISO: Arquivo '{NOME_MANUAL_LIMPO}' não encontrado.")
+# Esta é a versão leve, então não carregamos os modelos de busca local na inicialização.
+# Eles seriam carregados se você estivesse em um plano com mais RAM.
+print("API configurada para usar a busca na web.")
 
 
-# --- FUNÇÃO GENERATIVA ÚNICA ---
-def obter_resposta_generativa(pergunta_atual, historico):
-    if not client: 
-        return "O serviço de IA não está configurado corretamente."
-    if not CONTEUDO_MANUAL:
-        return "A base de conhecimento (manual) não foi carregada."
+# --- FUNÇÕES DE LÓGICA DA IA (O CÉREBRO) ---
+def buscar_na_web(pergunta, num_artigos=1):
+    print(f"Iniciando busca na web para: '{pergunta}'")
+    query = pergunta
+    try:
+        with DDGS() as ddgs:
+            resultados_links = list(ddgs.text(query, max_results=3, region='br-pt'))
+            if not resultados_links: return "Nenhum resultado encontrado na web."
+            url = resultados_links[0]['href']
+            print(f"Extraindo conteúdo de: {url}")
+            downloaded = fetch_url(url)
+            if downloaded:
+                texto_artigo = extract(downloaded, include_comments=False, include_tables=False)
+                return texto_artigo
+            return "Não foi possível extrair conteúdo da página."
+    except Exception as e:
+        print(f"Erro na busca web: {e}")
+        return "Ocorreu um erro na busca web."
 
+def obter_resposta_generativa(pergunta_atual, historico, contexto):
+    if not client: return "O serviço de IA não está configurado corretamente (sem chave de API)."
+    
     historico_formatado = "\n".join([f"Usuário: {msg['content']}" if msg['role'] == 'user' else f"Assistente: {msg['content']}" for msg in historico])
     
     prompt_completo = f"""
-    Você é um assistente técnico especialista. Sua única função é responder a PERGUNTA ATUAL do usuário baseando-se exclusivamente no MANUAL TÉCNICO COMPLETO fornecido.
+    Você é um assistente de pesquisa que responde perguntas baseadas em um CONTEXTO obtido da web.
 
-    REGRAS ESTRITAS E ABSOLUTAS:
-    1.  Leia todo o MANUAL TÉCNICO COMPLETO para encontrar a informação relevante.
-    2.  Use o HISTÓRICO DA CONVERSA para entender perguntas de acompanhamento.
-    3.  Responda de forma direta e objetiva, sem mencionar que você está consultando um manual. Aja como se você soubesse a informação.
-    4.  REGRA DE FALHA: Se a resposta não estiver no MANUAL TÉCNICO COMPLETO, responda APENAS com a frase: "Não encontrei informações sobre isso no manual."
+    REGRAS ESTRITAS:
+    1. Baseie sua resposta APENAS no CONTEXTO fornecido.
+    2. Seja direto e objetivo.
+    3. Nunca mencione o CONTEXTO. Apenas dê a resposta.
+    4. REGRA DE FALHA: Se a resposta não estiver no CONTEXTO, responda APENAS com: "Não encontrei informações sobre isso na minha pesquisa."
 
     ---
-    HISTÓRICO DA CONVERSA:
-    {historico_formatado}
+    HISTÓRICO DA CONVERSA: {historico_formatado}
     ---
-    MANUAL TÉCNICO COMPLETO:
-    {CONTEUDO_MANUAL}
+    CONTEXTO DA WEB: {contexto}
     ---
-    PERGUNTA ATUAL DO USUÁRIO:
-    {pergunta_atual}
+    PERGUNTA ATUAL DO USUÁRIO: {pergunta_atual}
     ---
     RESPOSTA DIRETA:
     """
@@ -64,11 +80,22 @@ def obter_resposta_generativa(pergunta_atual, historico):
 
 # --- CRIAÇÃO DA API COM FLASK ---
 app = Flask(__name__)
-CORS(app)
+
+# --- CONFIGURAÇÃO DE CORS ATUALIZADA E EXPLÍCITA ---
+# Substitua 'https://consolemix.com.br' pelo domínio exato do seu site, se for diferente.
+origins_permitidas = [
+    "https://consolemix.com.br",
+    "http://consolemix.com.br",
+    "http://localhost",
+    "http://127.0.0.1"
+]
+CORS(app, resources={r"/ask": {"origins": origins_permitidas}})
+# --- FIM DA ATUALIZAÇÃO ---
+
 
 @app.route('/')
 def health_check():
-    return "API do assistente especialista está no ar!"
+    return "API do assistente (versão leve) está no ar e funcionando!"
 
 @app.route('/ask', methods=['POST'])
 def ask_assistant():
@@ -79,7 +106,9 @@ def ask_assistant():
     pergunta_atual = data['question']
     historico = data.get('history', [])
     
-    resposta_final = obter_resposta_generativa(pergunta_atual, historico)
+    # Versão leve sempre usa a busca na web
+    contexto_web = buscar_na_web(pergunta_atual)
+    resposta_final = obter_resposta_generativa(pergunta_atual, historico, contexto_web)
         
     return jsonify({"answer": resposta_final})
 
