@@ -1,4 +1,7 @@
 import os
+import pickle
+import faiss
+import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from groq import Groq
@@ -6,7 +9,7 @@ from duckduckgo_search import DDGS
 from trafilatura import fetch_url, extract
 
 # --- CONFIGURAÇÕES E INICIALIZAÇÃO ---
-print("Iniciando a configuração do servidor (VERSÃO FINAL COM BUSCA WEB)...")
+print("Iniciando a configuração do servidor (VERSÃO FINAL COM DOSSIÊ)...")
 
 NOME_MANUAL_LIMPO = "manual_limpo.txt"
 CONTEUDO_MANUAL = ""
@@ -38,32 +41,38 @@ def buscar_na_web(pergunta):
             print(f"Extraindo conteúdo de: {url}")
             downloaded = fetch_url(url)
             if downloaded:
-                texto_artigo = extract(downloaded, include_comments=False, include_tables=False)
-                return texto_artigo
+                return extract(downloaded, include_comments=False, include_tables=False)
             return "Não foi possível extrair conteúdo da página."
     except Exception as e:
         print(f"Erro na busca web: {e}")
         return "Ocorreu um erro na busca web."
 
-def obter_resposta_generativa(pergunta_atual, contexto):
-    if not client: 
-        return "O serviço de IA não está configurado."
-    if not contexto:
-        return "Nenhuma fonte de conhecimento foi fornecida."
-
+def obter_resposta_generativa(pergunta_atual, historico, contexto_manual, contexto_web):
+    if not client: return "O serviço de IA não está configurado."
+    
+    historico_formatado = "\n".join([f"Usuário: {msg['content']}" if msg['role'] == 'user' else f"Assistente: {msg['content']}" for msg in historico])
+    
     prompt_completo = f"""
-    Você é um assistente técnico especialista. Sua função é responder a PERGUNTA do usuário baseando-se exclusivamente no CONTEXTO fornecido.
+    Você é um assistente técnico especialista. Sua tarefa é responder a PERGUNTA ATUAL do usuário. Para isso, você tem um HISTÓRICO de conversa e duas fontes de conhecimento: um MANUAL TÉCNICO e CONTEÚDO DA WEB.
 
-    REGRAS ESTRITAS:
-    1.  Analise o CONTEXTO para encontrar a resposta para a PERGUNTA.
-    2.  Responda de forma direta e objetiva, como um especialista. Não mencione o contexto.
-    3.  REGRA DE FALHA: Se a resposta não estiver no CONTEXTO, responda APENAS com a frase: "Não encontrei informações sobre isso na fonte consultada."
+    **SUA LÓGICA DE DECISÃO E REGRAS ESTRITAS:**
+    1.  **PRIORIDADE MÁXIMA AO MANUAL:** Verifique PRIMEIRO se o CONTEXTO DO MANUAL TÉCNICO contém a resposta para a PERGUNTA ATUAL (use o HISTÓRICO para entender perguntas como "e sobre ele?").
+    2.  **SE A RESPOSTA ESTIVER NO MANUAL:** Baseie sua resposta **100%** no manual. IGNORE completamente o CONTEÚDO DA WEB.
+    3.  **SE A RESPOSTA NÃO ESTIVER NO MANUAL:** Então, e somente então, use o CONTEÚDO DA WEB para responder.
+    4.  **SEJA DIRETO:** Responda diretamente à pergunta. Não mencione as fontes (ex: "No manual...").
+    5.  **REGRA DE FALHA:** Se a informação não estiver em nenhuma das fontes, responda APENAS com: "Não encontrei informações sobre isso em minhas fontes."
 
     ---
-    CONTEXTO:
-    {contexto}
+    HISTÓRICO DA CONVERSA:
+    {historico_formatado}
     ---
-    PERGUNTA:
+    FONTE 1 (PRIORITÁRIA): CONTEXTO DO MANUAL TÉCNICO
+    {contexto_manual or "Nenhuma informação do manual disponível para esta pergunta."}
+    ---
+    FONTE 2 (SECUNDÁRIA): CONTEÚDO DA WEB
+    {contexto_web or "Nenhuma informação da web disponível para esta pergunta."}
+    ---
+    PERGUNTA ATUAL DO USUÁRIO:
     {pergunta_atual}
     ---
     RESPOSTA DIRETA:
@@ -81,7 +90,7 @@ CORS(app, resources={r"/ask": {"origins": ["https://consolemix.com.br", "http://
 
 @app.route('/')
 def health_check():
-    return "API do assistente especialista está no ar!"
+    return "API do assistente especialista (versão dossiê) está no ar!"
 
 @app.route('/ask', methods=['POST'])
 def ask_assistant():
@@ -90,19 +99,13 @@ def ask_assistant():
         return jsonify({"error": "A pergunta (question) é obrigatória."}), 400
 
     pergunta_atual = data['question']
+    historico = data.get('history', [])
     
-    # --- LÓGICA DE CASCATA RESTAURADA ---
+    # Busca na web é feita de forma leve e rápida
+    contexto_web = buscar_na_web(pergunta_atual)
     
-    # 1. Tenta responder usando o manual primeiro.
-    print(f"Tentando responder '{pergunta_atual}' com o manual...")
-    resposta_final = obter_resposta_generativa(pergunta_atual, CONTEUDO_MANUAL)
-    
-    # 2. Verifica se a resposta do manual foi inútil.
-    if "não encontrei informações sobre isso" in resposta_final.lower():
-        print("Resposta não encontrada no manual. Partindo para a busca na web.")
-        # Se foi, busca na web e gera uma nova resposta.
-        contexto_web = buscar_na_web(pergunta_atual)
-        resposta_final = obter_resposta_generativa(pergunta_atual, contexto_web)
+    # Envia o dossiê completo para a IA e confia na sua lógica de decisão
+    resposta_final = obter_resposta_generativa(pergunta_atual, historico, CONTEUDO_MANUAL, contexto_web)
         
     return jsonify({"answer": resposta_final})
 
