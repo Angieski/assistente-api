@@ -3,11 +3,9 @@ import pickle
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from groq import Groq
-from duckduckgo_search import DDGS
-from trafilatura import fetch_url, extract
 
 # --- CONFIGURAÇÕES E INICIALIZAÇÃO ---
-print("Iniciando a configuração do servidor (VERSÃO FINAL LEVE)...")
+print("Iniciando a configuração do servidor (VERSÃO FINAL COM CORS EXPLÍCITO)...")
 
 NOME_MANUAL_LIMPO = "manual_limpo.txt"
 CONTEUDO_MANUAL = ""
@@ -19,7 +17,6 @@ except Exception as e:
     print(f"ERRO: Chave da API da Groq não encontrada. Configure a variável de ambiente. Erro: {e}")
     client = None
 
-# Carrega o conteúdo do manual na memória uma única vez na inicialização
 if os.path.exists(NOME_MANUAL_LIMPO):
     with open(NOME_MANUAL_LIMPO, "r", encoding="utf-8") as f:
         CONTEUDO_MANUAL = f.read()
@@ -28,44 +25,29 @@ else:
     print(f"AVISO: Arquivo de manual '{NOME_MANUAL_LIMPO}' não encontrado.")
 
 
-# --- FUNÇÕES DE LÓGICA DA IA ---
-def buscar_na_web(pergunta):
-    print(f"Iniciando busca na web para: '{pergunta}'")
-    query = pergunta
-    try:
-        with DDGS() as ddgs:
-            resultados_links = list(ddgs.text(query, max_results=3, region='br-pt'))
-            if not resultados_links: return "Nenhum resultado encontrado na web."
-            url = resultados_links[0]['href']
-            print(f"Extraindo conteúdo de: {url}")
-            downloaded = fetch_url(url)
-            if downloaded:
-                texto_artigo = extract(downloaded, include_comments=False, include_tables=False)
-                return texto_artigo
-            return "Não foi possível extrair conteúdo da página."
-    except Exception as e:
-        print(f"Erro na busca web: {e}")
-        return "Ocorreu um erro na busca web."
+# --- FUNÇÃO GENERATIVA ---
+def obter_resposta_generativa(pergunta_atual, historico, contexto):
+    if not client: 
+        return "O serviço de IA não está configurado corretamente."
+    if not CONTEUDO_MANUAL:
+        return "Desculpe, a base de conhecimento (manual) não foi carregada no servidor."
 
-def obter_resposta_generativa(pergunta_atual, historico, contexto, fonte):
-    if not client: return "O serviço de IA não está configurado corretamente."
-    
     historico_formatado = "\n".join([f"Usuário: {msg['content']}" if msg['role'] == 'user' else f"Assistente: {msg['content']}" for msg in historico])
     
     prompt_completo = f"""
-    Você é um assistente técnico especialista. Sua tarefa é responder a PERGUNTA ATUAL do usuário baseando-se no CONTEXTO fornecido pela fonte '{fonte}'.
+    Você é um assistente técnico especialista. Sua única função é responder a PERGUNTA ATUAL do usuário baseando-se exclusivamente no MANUAL TÉCNICO COMPLETO fornecido.
 
-    REGRAS ESTRITAS:
-    1.  Responda APENAS com base no CONTEXTO.
-    2.  Seja direto e objetivo. Não mencione o contexto.
-    3.  REGRA DE FALHA: Se a resposta não estiver no CONTEXTO, responda APENAS com: "Não encontrei informações sobre isso na fonte consultada."
+    REGRAS ESTRITAS E ABSOLUTAS:
+    1.  Leia todo o MANUAL TÉCNICO COMPLETO para encontrar a informação relevante. Use o HISTÓRICO DA CONVERSA para entender perguntas de acompanhamento.
+    2.  Responda de forma direta e objetiva, como se você fosse o especialista que sabe a informação, sem mencionar que consultou um manual.
+    3.  REGRA DE FALHA: Se, após ler todo o manual, a resposta não estiver lá, responda APENAS com a frase: "Não encontrei informações sobre isso no manual."
 
     ---
     HISTÓRICO DA CONVERSA:
     {historico_formatado}
     ---
-    CONTEXTO DE CONSULTA (Fonte: {fonte}):
-    {contexto}
+    MANUAL TÉCNICO COMPLETO:
+    {CONTEUDO_MANUAL}
     ---
     PERGUNTA ATUAL DO USUÁRIO:
     {pergunta_atual}
@@ -81,7 +63,18 @@ def obter_resposta_generativa(pergunta_atual, historico, contexto, fonte):
 
 # --- CRIAÇÃO DA API COM FLASK ---
 app = Flask(__name__)
-CORS(app)
+
+# --- CORREÇÃO DEFINITIVA DE CORS ---
+# Estamos dizendo explicitamente quais domínios podem acessar nossa API.
+origins_permitidas = [
+    "https://consolemix.com.br",
+    "http://consolemix.com.br",
+    "http://localhost",
+    "http://127.0.0.1"
+]
+CORS(app, resources={r"/ask": {"origins": origins_permitidas}})
+# --- FIM DA CORREÇÃO ---
+
 
 @app.route('/')
 def health_check():
@@ -96,16 +89,10 @@ def ask_assistant():
     pergunta_atual = data['question']
     historico = data.get('history', [])
     
-    # Lógica final: usa o manual inteiro como contexto e passa para a IA decidir.
-    # Se o manual não existir, o contexto será vazio.
-    resposta_final = obter_resposta_generativa(pergunta_atual, historico, CONTEUDO_MANUAL, "Manual Técnico")
-
-    # Verificamos se a resposta da IA indica que a informação não foi encontrada
-    if "não encontrei informações sobre isso" in resposta_final.lower():
-        print("Resposta não encontrada no manual. Partindo para a busca na web.")
-        contexto_web = buscar_na_web(pergunta_atual)
-        resposta_final = obter_resposta_generativa(pergunta_atual, historico, contexto_web, "Web")
-
+    # A lógica foi simplificada: a IA sempre tentará usar o manual.
+    # O prompt instrui a IA sobre o que fazer se a resposta não estiver lá.
+    resposta_final = obter_resposta_generativa(pergunta_atual, historico, CONTEUDO_MANUAL)
+        
     return jsonify({"answer": resposta_final})
 
 if __name__ == '__main__':
