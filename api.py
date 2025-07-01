@@ -4,7 +4,7 @@ from flask_cors import CORS
 from groq import Groq
 
 # --- CONFIGURAÇÕES E INICIALIZAÇÃO ---
-print("Iniciando a configuração do servidor (VERSÃO DEFINITIVA ULTRA-LEVE)...")
+print("Iniciando a configuração do servidor (VERSÃO FINAL SEM MEMÓRIA)...")
 
 NOME_MANUAL_LIMPO = "manual_limpo.txt"
 CONTEUDO_MANUAL = ""
@@ -16,7 +16,6 @@ except Exception as e:
     print(f"ERRO: Chave da API da Groq não encontrada. Configure a variável de ambiente. Erro: {e}")
     client = None
 
-# Carrega o conteúdo do manual na memória uma única vez na inicialização
 if os.path.exists(NOME_MANUAL_LIMPO):
     with open(NOME_MANUAL_LIMPO, "r", encoding="utf-8") as f:
         CONTEUDO_MANUAL = f.read()
@@ -25,31 +24,26 @@ else:
     print(f"AVISO: Arquivo de manual '{NOME_MANUAL_LIMPO}' não encontrado.")
 
 
-# --- FUNÇÃO GENERATIVA ÚNICA ---
-def obter_resposta_generativa(pergunta_atual, historico):
+# --- FUNÇÃO GENERATIVA SIMPLIFICADA (SEM HISTÓRICO) ---
+def obter_resposta_generativa(pergunta_atual):
     if not client: 
         return "O serviço de IA não está configurado corretamente."
     if not CONTEUDO_MANUAL:
         return "Desculpe, a base de conhecimento (manual) não foi carregada no servidor."
 
-    historico_formatado = "\n".join([f"Usuário: {msg['content']}" if msg['role'] == 'user' else f"Assistente: {msg['content']}" for msg in historico])
-    
     prompt_completo = f"""
-    Você é um assistente técnico especialista. Sua única função é responder a PERGUNTA ATUAL do usuário baseando-se exclusivamente no MANUAL TÉCNICO COMPLETO fornecido.
+    Você é um assistente técnico especialista. Sua única função é responder a PERGUNTA do usuário baseando-se exclusivamente no MANUAL TÉCNICO COMPLETO fornecido.
 
     REGRAS ESTRITAS E ABSOLUTAS:
-    1.  Leia todo o MANUAL TÉCNICO COMPLETO para encontrar a informação relevante. Use o HISTÓRICO DA CONVERSA para entender perguntas de acompanhamento.
+    1.  Leia todo o MANUAL TÉCNICO COMPLETO para encontrar a informação relevante para responder a PERGUNTA.
     2.  Responda de forma direta e objetiva, como se você fosse o especialista que sabe a informação, sem mencionar que consultou um manual.
     3.  REGRA DE FALHA: Se, após ler todo o manual, a resposta não estiver lá, responda APENAS com a frase: "Não encontrei informações sobre isso no manual."
 
     ---
-    HISTÓRICO DA CONVERSA:
-    {historico_formatado}
-    ---
     MANUAL TÉCNICO COMPLETO:
     {CONTEUDO_MANUAL}
     ---
-    PERGUNTA ATUAL DO USUÁRIO:
+    PERGUNTA DO USUÁRIO:
     {pergunta_atual}
     ---
     RESPOSTA DIRETA:
@@ -63,13 +57,13 @@ def obter_resposta_generativa(pergunta_atual, historico):
 
 # --- CRIAÇÃO DA API COM FLASK ---
 app = Flask(__name__)
-# Configuração de CORS explícita para produção
 CORS(app, resources={r"/ask": {"origins": ["https://consolemix.com.br", "http://consolemix.com.br", "http://localhost", "http://127.0.0.1"]}})
 
 @app.route('/')
 def health_check():
-    return "API do assistente especialista (versão definitiva) está no ar!"
+    return "API do assistente especialista (v.Final Sem Memória) está no ar!"
 
+# --- ROTA /ask SIMPLIFICADA (SEM HISTÓRICO) ---
 @app.route('/ask', methods=['POST'])
 def ask_assistant():
     data = request.get_json()
@@ -77,10 +71,8 @@ def ask_assistant():
         return jsonify({"error": "A pergunta (question) é obrigatória."}), 400
 
     pergunta_atual = data['question']
-    historico = data.get('history', [])
     
-    # A lógica agora é muito simples: sempre usa o manual como fonte.
-    resposta_final = obter_resposta_generativa(pergunta_atual, historico)
+    resposta_final = obter_resposta_generativa(pergunta_atual)
         
     return jsonify({"answer": resposta_final})
 
