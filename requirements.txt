@@ -1,7 +1,5 @@
+# requirements.txt (VERSÃO FINAL PARA DEPLOY)
 Flask
 Flask-Cors
 gunicorn
 groq
-duckduckgo-search
-trafilatura
-requests
