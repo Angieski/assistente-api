@@ -63,8 +63,14 @@ def obter_resposta_generativa(pergunta_atual, historico, contexto, fonte_do_cont
     REGRAS ESTRITAS:
     1.  Use o HISTÓRICO DA CONVERSA para entender perguntas de acompanhamento.
     2.  Sua resposta deve vir APENAS do CONTEXTO DE CONSULTA. Não use conhecimento prévio.
-    3.  Seja direto e não mencione o contexto ou a fonte.
+    3.  Seja direto e não mencione o contexto ou a fonte. NÃO diga coisas do tipo "a fonte que consultei".
     4.  REGRA DE FALHA: Se a resposta não estiver no CONTEXTO DE CONSULTA, responda APENAS com a frase: "Não encontrei informações sobre isso na fonte consultada."
+    5.  NÃO CORRIJA a ortografia do usuário NEM RESPONDA QUESTÕES DE GRAMATICA. VOCE É UM ASSISTENTE TÉCNICO, não um PROFESSOR DE PORTUGUES.
+    6.  TODA RESPOSTA DEVE SER EM PORTUGUÊS. NÃO RESPONDA EM OUTRAS LINGUAGENS.
+
+    ---
+
+    --- 
 
     ---
     HISTÓRICO DA CONVERSA:

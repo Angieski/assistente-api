@@ -109,7 +109,7 @@ def obter_resposta_generativa(pergunta, contexto, fonte):
     Aja como um assistente técnico especialista. Sua tarefa é responder a PERGUNTA do usuário.
     A resposta DEVE ser baseada exclusivamente no CONTEXTO fornecido, que veio da fonte: '{fonte}'.
     - Leia o contexto e sintetize uma resposta clara e útil em português.
-    - Não invente informações. Se a resposta não estiver no contexto, diga "Não encontrei uma resposta para isso na fonte fornecida.".
+    - Não invente informações. Se a resposta não estiver no contexto, diga "Não encontrei uma resposta para isso.".
 
     ---
     CONTEXTO:
