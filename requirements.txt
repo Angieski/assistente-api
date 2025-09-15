@@ -1,0 +1,7 @@
+Flask
+Flask-Cors
+gunicorn
+groq
+requests
+duckduckgo-search
+trafilatura

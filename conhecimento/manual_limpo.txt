@@ -1,0 +1,340 @@
+Bem-vindo ao manual da Console Mix, uma mesa de som virtual profissional para 
+gerenciamento e mixagem de áudio digital. Este software foi desenvolvido para oferecer 
+controle completo sobre múltiplos canais de áudio, com funcionalidades avançadas como 
+equalização, expansão dinâmica, barramentos dedicados e integração com Playouts 
+externos.
+
+Requisitos Mínimos: 
+Sistema Operacional: Windows 10/11 (64 bits) 
+Processador: Intel Core i5 (6ª geração) ou AMD Ryzen 5 ou superior 
+Memória RAM: 8 GB 
+Espaço em Disco: 500 MB livres 
+Placa de Som: Compatível com DirectSound ou ASIO 
+Resolução de Tela: 1366 x 768 ou superior 
+Requisitos Recomendados: 
+Processador: Intel Core i7 (12ª geração) ou AMD Ryzen 7 ou superior 
+Memória RAM: 16 GB 
+Espaço em Disco: 1 GB livre 
+Placa de Som: Compatível com ASIO 
+Resolução de Tela: 1920 x 1080 ou superior (recomenda-se o uso de touch-screen) 
+Acesso à Internet
+
+Faça o download do arquivo de instalação no site oficial 
+Verifique se o arquivo baixado é a versão mais recente 
+Processo de Instalação 
+Execute o arquivo de instalação como administrador 
+Leia e aceite os termos de licença 
+Escolha o diretório de instalação 
+Selecione os componentes que deseja instalar: 
+Software principal 
+Plugins adicionais 
+Clique em "Instalar" e aguarde a conclusão do processo 
+Primeira Execução 
+Execute o software pela primeira vez 
+Configure sua placa de som ou interface de áudio
+
+Cabeçalho 
+Seções A, B, C: Três painéis no topo mostram medidores de nível para monitoramento 
+visual dos sinais de áudio. 
+Display Digital Central: Exibe informações como hora atual, data e temperatura. 
+
+Painel de Opções (Options) 
+Menu lateral direito com opções de configurações: 
+Sound (Som) 
+Outputs (Saídas) 
+Tracks (Faixas) 
+Plugins 
+CamCorder 
+Commands (Comandos) 
+General (Geral) 
+Reboot/Update (Reiniciar/Atualizar) 
+About (Sobre)
+
+Controle de Voice Over: Permite controlar a atenuação do Voice Over de maneira prática 
+Predefinições: Botões de memória (MEM 1-5) personalizáveis para armazenar 
+configurações. 
+Área de Canais: Exibe todos os canais de entrada disponíveis
+Botão de minimizar/maximizar mesa
+
+Canais de Entrada (Audio Track) 
+16 Canais de Entrada: Cada canal possui: 
+Fader vertical para controle de volume 
+Medidores de nível LED 
+Botão "DINAMICS" para adicionar/remover/configurar plugins na Track 
+Botões "ON/OFF" para ativar/desativar o canal 
+Identificação numérica (1, 2, 3, etc.) 
+Botões "TALK" e "CUE" para comunicação e pré-escuta
+
+Sound (Configurações da Interface de Áudio): 
+Audio device type: Define o tipo de protocolo de áudio utilizado, possuindo 5 opções 
+(Windows Audio, Windows Audio (Exclusive mode), Windows Audio (Low Latency mode), 
+DirectSound e ASIO. 
+Device: Especifica o hardware de áudio conectado ao computador, possibilitando também o 
+uso de uma interface de áudio virtual ou física com capacidade para múltiplos canais. O 
+botão "Test" ao lado permite verificar a comunicação com o dispositivo selecionado. 
+Active output channels: Esta seção permite selecionar quais canais de saída do dispositivo 
+serão utilizados pelo Console Mix. 
+Active input channels: De forma similar, esta seção determina quais canais de entrada do 
+dispositivo serão monitorados pelo Console Mix. 
+Sample rate: Define a taxa de amostragem do áudio. Taxa de amostragem determina 
+quantas "amostras" de áudio são capturadas por segundo, afetando diretamente a 
+fidelidade e o range de frequências do áudio processado. 
+Audio buffer size: Define o tamanho do buffer de áudio. O buffer é uma área de memória 
+temporária onde os dados de áudio são armazenados durante o processamento. Um buffer 
+menor (como 64 samples na imagem) resulta em menor latência (apenas 1,3 ms), o que é 
+ideal para monitoração em tempo real, mas pode exigir mais do processador. Buffers 
+maiores reduzem a carga no CPU, mas aumentam o delay entre a entrada e saída do 
+áudio. 
+Control Panel: Abre o painel de controle específico do driver selecionado, permitindo acesso 
+a configurações avançadas próprias do fabricante da interface de áudio. 
+Reset Device: Reinicia a comunicação com o dispositivo de áudio, para solucionar 
+problemas de conexão ou quando alterações nas configurações não estão sendo aplicadas 
+corretamente.
+
+Outputs (Configurações de saída de áudio):  
+Outputs: A aba representada na imagem, que gerencia as saídas básicas do sistema 
+NDI / UDP: Usado para configurar transmissões de áudio em rede usando protocolos NDI 
+ou UDP 
+AES67: Para configurar saídas de áudio usando o protocolo AES67 (padrão de áudio sobre 
+IP) 
+Stream: Para configurações relacionadas à transmissão de áudio para plataformas de 
+streaming 
+BUS A, BUS B, BUS C: Barramentos principais de mixagem que agrupam diferentes canais 
+Monitor: Saída dedicada para monitoração em estúdio 
+Fone: Saída para fones de ouvido 
+CUE: Saída para pré-escuta de canais específicos 
+MINUS 1, MINUS 2: Saídas onde determinados sinais são excluídos da mixagem 
+(comumente usados para retornos de participantes externos) 
+Gain Bus: Controles deslizantes para ajustar o ganho (volume) de cada barramento. 
+Output 1: Define para qual saída física ou virtual será direcionado o áudio de cada 
+barramento. 
+Output 2: Permite configurar um destino secundário para cada barramento, oferecendo 
+flexibilidade adicional de roteamento. 
+Recursos Adicionais para fone: Possibilidade de aplicar processamento de áudio adicional 
+ao sinal do fone 
+Monitor Attenuation: Este controle permite diminuir automaticamente o volume da saída de 
+monitoração em determinadas condições (como quando o microfone está aberto), 
+funcionalidade conhecida como "ducking" ou "dimming".
+
+Tracks (Configurações de entrada de áudio):   
+Input: Atribui as entradas de áudio às Tracks desejadas, podendo também personalizar um 
+rótulo à Track, aumentar/diminuir ganho com controles deslizantes, definir tipo de entrada 
+de áudio (Main, NDI, UDP, Stream, Link INT, VOIP e Audio Call). 
+Main: Refere-se às conexões de áudio padrão ou principais do sistema, através de 
+interfaces de áudio físicas conectadas ao computador. É o método convencional para 
+entrada e saída de áudio em um sistema de som digital. 
+NDI (Network Device Interface): Permite que sinais de áudio sejam enviados e recebidos 
+entre diferentes computadores ou dispositivos na mesma rede, eliminando a necessidade 
+de cabos físicos dedicados. 
+UDP (User Datagram Protocol): É um protocolo de rede fundamental que permite a 
+transmissão rápida de dados pela internet ou redes locais. São frequentemente utilizadas 
+para transmitir fluxos de áudio em tempo real quando alguma perda de pacotes é tolerável 
+em favor de menor latência. 
+Stream: Refere-se à capacidade de transmitir o áudio diretamente para plataformas de 
+streaming online, ou serviços de rádio pela internet. 
+Link INT (Link Internal): Refere-se a conexões de link interno que permitem o roteamento de 
+áudio entre diferentes instâncias de software ou componentes internos do mesmo sistema. 
+Permite você rotear sinais internamente sem precisar utilizar entradas e saídas físicas, 
+economizando recursos e simplificando o fluxo de trabalho. 
+VOIP (Voice Over Internet Protocol): Refere-se à tecnologia que permite comunicação de 
+voz através da internet. Em sistemas de áudio profissional. Esta funcionalidade é 
+fundamental para produções remotas, podcasts com convidados à distância, e transmissões 
+que incorporam interação com pessoas em outros locais. 
+Audio Call: O Console Mix oferece também, uma ferramenta que permite conectar a mesa 
+de som virtual a dispositivos móveis e computadores sem a necessidade de IP fixo ou 
+aplicação dedicada, funcionando de uma maneira totalmente wireless necessitando apenas 
+de acesso à internet de ambos os dispositivos.
+Buses (Barramentos): Permite selecionar os barramentos para as quais devem ser roteadas 
+as faixas (BUS A, BUS B, BUS C, MINUS 1 e MINUS 2).
+Options: Possibilita ao usuário fazer configurações adicionais para cada Track de áudio, 
+podendo assim, adicionar Cut Monitor, Voice Over, Soundtrack, Timer e também, 
+personalizar cada Track que desejar. Também inclui o botão "Safe", que impossibilita que a 
+Track seja modificada ao usar a seção de predefinições. 
+
+Audio Call: O Console Mix oferece também, uma ferramenta que permite conectar a mesa 
+de som virtual a dispositivos móveis e computadores sem a necessidade de IP fixo ou 
+aplicação dedicada, funcionando de uma maneira totalmente wireless necessitando apenas 
+de acesso à internet de ambos os dispositivos. 
+Como funciona: 
+Retorno direto do Console Mix: O dispositivo conectado através da ferramenta Audio Call, 
+recebe retorno completo da mesa de som virtual, sendo possível configurar o retorno 
+através dos barramentos. 
+ID de Sessão dinâmico: Ao criar uma nova sessão através do Console Mix, 
+automaticamente um ID de sessão e um link de acesso é gerado para ser enviado ao 
+destinatário da chamada. 
+Conexão Full Duplex: A ferramenta funciona semelhante à uma chamada telefônica, 
+possibilitando ambos os dispositivos se comunicarem ao mesmo tempo.
+
+Plugins/Processamento de áudio (Gerenciamento de plugins VST3):  
+Botão Scan Plugins: Permite escanear plugins existentes no sistema para adicionar à mesa 
+Plugins recomendados:
+OSS (VST3 - FX|Dynamics): Um plugin de dinâmica que refere-se a um processador de 
+"Over-Shoulder Suppression". Como processador dinâmico, ele trabalha alterando a relação 
+entre os sinais de entrada e saída com base no nível de amplitude. 
+TDR Kotelnikov (VST3 - FX|Mastering): um compressor de mastering de alta qualidade. É 
+reconhecido por seu motor de compressão transparente e preciso, projetado 
+especificamente para aplicações de mastering. 
+NA Analog Rack Delay (VST3 - FX|Delay): Emula um delay analógico em rack. Delays 
+analógicos são conhecidos por seu caráter sonoro quente e degradação natural do sinal 
+repetido.
+TDR Nova (VST3 - FX|EQ): O TDR Nova é um equalizador paramétrico dinâmico. Combina 
+equalização tradicional com processamento dinâmico baseado em frequência. 
+ATKExpander (VST3 - FX|Dynamics): O ATKExpander funciona como um expansor de 
+dinâmica, essencialmente o oposto de um compressor. Ideal para reduzir ruído de fundo 
+durante pausas na fala. 
+TAL Reverb 4 Plugin (VST3 - FX): Este é um plugin de reverberação que simula espaços 
+acústicos artificiais. Utilizado para adicionar sensação de espaço e profundidade, criar 
+ambientes específicos para diferentes segmentos de programa, suavizar transições, ou 
+adicionar caráter a vozes e instrumentos.
+
+Commands (Comandos UDP) /Flag Settings: 
+A seção Commands possibilita configurar triggers para cada track para, por exemplo, 
+acender a luz de "ON AIR" ao ligar o canal do microfone.
+
+General (Geral): 
+Personalização de toda interface do software entre Standard e Black. 
+Personalização de rótulo para seção de predefinições.
+
+Buses (Barramentos): Permite selecionar os barramentos para as quais devem ser roteadas 
+as faixas (BUS A, BUS B, BUS C, MINUS 1 e MINUS 2).
+Barramentos de Áudio 
+O Console Mix oferece três barramentos independentes (A, B, C e Minus) que permitem 
+agrupar e processar sinais de áudio de forma separada. 
+Barramento A 
+Função Principal: Mixagem principal (Main Mix) 
+Uso Típico: Saída principal para transmissão ou gravação 
+Barramento B 
+Função Principal: Mix alternativo ou sub mixagem 
+Uso Típico: Monitoramento ou gravação secundária 
+Barramento C 
+Função Principal: Mix auxiliar ou envios de efeitos 
+Uso Típico: Envios para efeitos externos ou retornos 
+Barramento Minus 
+Função Principal: Cancelamento de feedback ou eco 
+Uso Típico: Evitar que o ouvinte (em uma entrevista por exemplo) ouça o retorno de sua 
+própria voz
+
+General (Geral): 
+Personalização de toda interface do software entre Standard e Black. 
+Personalização de rótulo para seção de predefinições.
+Predefinições 
+O Console Mix conta com o sistema de salvamento de predefinições, possibilitando uma 
+praticidade maior ao operador para uso de configurações diversas. 
+Como funciona as Predefinições    
+Predefinições de Tracks:                                              
+Salvamento de posições de faders. 
+Salvamento de configurações de plugins. 
+Personalização dos botões. 
+Como configurar Predefinições de Tracks 
+Abaixo do controlador de "Voice Over" há 6 opções de memória (MEM 1, MEM 2, etc) 
+Pressione e segure por 4 segundos na opção que desejar para salvar 
+Para carregar a predefinição salva, basta clicar na opção desejada 
+Para personalizar: Options > General > Memories 
+Predefinições de Mute: 
+Salvamento de botões on/off. 
+Fácil acesso através do menu lateral. 
+Possibilidade de configurar até 2 grupos de Mute. 
+Como configurar Predefinições de Mute: 
+"Options" > "Tracks" > "Buses/Mutes".
+
+Função CUE 
+A função CUE permite que o operador monitore o áudio processado sem que ele seja 
+enviado para qualquer dos barramentos 
+Configuração do Sistema CUE: 
+Clique no botão "Options" no canto superior direito 
+Selecione a opção "Outputs" 
+Configure o canal de saída para função CUE (caso a função seja usada apenas pelo 
+operador, não é necessária a configuração de canais da mesma)
+
+Função TALK 
+A função TALK permite comunicação direta com destinatários específicos sem interferir na 
+transmissão principal. 
+Características da Função TALK: 
+Comunicação Dedicada: Canal separado para instruções e coordenação 
+Roteamento Flexível: Envio para retornos específicos 
+Modo Dim: Reduz automaticamente outros sinais durante a comunicação 
+Ativação Momentânea ou Fixa: Botão TALK possui operação momentânea (pressionar para 
+falar) 
+Uso do Sistema TALK: 
+Pressione e segure o botão TALK na interface principal 
+Fale normalmente no microfone designado 
+O sinal principal permanecerá inalterado para a transmissão ou gravação 
+
+Configuração de Áudio 
+O Console Mix é compatível com diferentes sistemas de gerenciamento de áudio, 
+oferecendo flexibilidade para diversos cenários de uso. 
+Placa de Som Física 
+O Console Mix pode ser configurado para trabalhar com interfaces de áudio físicas, 
+aproveitando seu hardware dedicado para processamento de áudio de alta qualidade. 
+Configuração de Placa de Som Física: 
+Acesse "Configurações" > "Sistema de Áudio" > "Hardware" 
+Selecione sua interface de áudio na lista de dispositivos 
+Configure as entradas e saídas físicas: 
+Atribua canais específicos a entradas físicas 
+Configure saídas para barramentos e retornos 
+Ajuste os níveis de referência 
+Configure o relógio (clock) e sincronização: 
+Internal: a placa gera seu próprio clock 
+External: sincroniza com fonte externa (word clock) 
+Vantagens de Placas Físicas: 
+Pré-amplificadores dedicados para microfones 
+Conversores AD/DA de alta qualidade 
+Processamento DSP em hardware (em alguns modelos) 
+Controles físicos para ajustes rápidos
+
+Integração com vMix 
+O Console Mix oferece integração completa com o software vMix, permitindo sincronização 
+de áudio e vídeo para produções profissionais. 
+Recursos de Integração: 
+Sincronização de Áudio: Alinhamento automático entre áudio e vídeo. 
+Controle Remoto: Possibilidade de controlar as cenas do vMix, diretamente da Interface 
+Principal da mesa através da opção "vMix Controller". 
+Seguimento de Fontes: Mudança automática de configurações de áudio ao alternar fontes 
+de vídeo.
+
+Solução de Problemas 
+Esta seção apresenta soluções para problemas comuns que podem ocorrer durante o uso 
+do Console Mix. 
+Problemas de Áudio 
+Sem Áudio ou Áudio Baixo: 
+Verifique se os faders de canal e master estão elevados 
+Verifique se os botões on/off 
+Verifique o roteamento para os barramentos corretos 
+Confirme se o dispositivo de saída está configurado corretamente 
+Verifique os níveis de ganho de entrada 
+Áudio com Ruídos ou Distorções: 
+Reduza o ganho de entrada se os medidores estiverem no vermelho 
+Verifique a qualidade das conexões físicas 
+Aumente o tamanho do buffer se houver estalos ou cortes 
+Desative processos intensivos do sistema que possam causar sobrecarga 
+Latência Excessiva: 
+Reduza o tamanho do buffer de áudio 
+Utilize drivers ASIO em vez de WDM ou DirectSound 
+Desative plugins que consomem muitos recursos 
+Verifique se o monitoramento direto está ativado (quando disponível) 
+Considere uma interface de áudio com menor latência 
+Problemas de Software 
+Software Lento ou Instável: 
+Verifique os requisitos mínimos do sistema 
+Atualize drivers de áudio para as versões mais recentes 
+Feche aplicativos desnecessários em segundo plano 
+Verifique se há atualizações disponíveis para o software 
+Reinstale o software se o problema persistir 
+Erros de Inicialização: 
+Execute o software como administrador 
+Verifique se todos os arquivos de instalação estão presentes 
+Desative temporariamente o antivírus durante a instalação 
+Reinstale os drivers de áudio 
+Verifique se há conflitos com outros softwares de áudio 
+Problemas de Integração: 
+Verifique as configurações de rede 
+Confirme se as versões dos softwares são compatíveis 
+Reinicie ambos os softwares após configurar a integração 
+Verifique as portas de comunicação no firewall 
+
+Suporte Técnico 
+Contato para Suporte: 
+● Telefone: (42) 99985-3754; (42) 99848-8284 
+● Horário de Atendimento: Segunda a Sexta, das 9h às 18h (UTC-3) 
+Recursos Adicionais: 
+● Atualizações e Patches: www.radioalerta.com.br/console

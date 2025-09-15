@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip --version)",
+      "WebFetch(domain:console.groq.com)",
+      "Bash(python test:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

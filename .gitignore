@@ -1,0 +1,16 @@
+# Ambiente Virtual do Python e caches
+.streamlit/
+venv/
+__pycache__/
+*.pyc
+
+# Arquivos de Índice gerados pela nossa IA
+#*.bin
+#*.pkl
+
+# Arquivos de diagnóstico que criamos
+diagnostico_texto_bruto.txt
+
+# Arquivos de configuração de editores de código (boa prática)
+.vscode/
+.idea/
