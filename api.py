@@ -135,9 +135,6 @@ def obter_resposta_valores(idioma):
 🕒 Horário de Atendimento:
 Segunda a Sexta, das 9h às 18h (horário de Brasília)
 
-🌐 Site:
-consolemix.com.br/console
-
 Nossa equipe terá prazer em apresentar as melhores opções de planos para você!""",
 
         'es': """Para información sobre precios, planes y licencias de Console Mix, póngase en contacto directamente con nuestro equipo de soporte:
@@ -149,9 +146,6 @@ Nossa equipe terá prazer em apresentar as melhores opções de planos para voc�
 🕒 Horario de Atención:
 Lunes a Viernes, de 9h a 18h (horario de Brasilia)
 
-🌐 Sitio web:
-consolemix.com.br/console
-
 ¡Nuestro equipo estará encantado de presentarle las mejores opciones de planes para usted!""",
 
         'en': """For information about pricing, plans and licenses for Console Mix, please contact our support team directly:
@@ -162,9 +156,6 @@ consolemix.com.br/console
 
 🕒 Business Hours:
 Monday to Friday, 9am to 6pm (Brasilia time)
-
-🌐 Website:
-consolemix.com.br/console
 
 Our team will be happy to present you with the best plan options!"""
     }
@@ -209,22 +200,46 @@ else:
 
 def buscar_na_web(pergunta):
     """Função para buscar na web e extrair o conteúdo principal de um artigo."""
-    print(f"Iniciando busca na web para: '{pergunta}'")
+    print(f"[WEB SEARCH] Iniciando busca na web para: '{pergunta}'")
     query = pergunta
     try:
         with DDGS() as ddgs:
-            resultados_links = list(ddgs.text(query, max_results=1, region='br-pt'))
-            if not resultados_links: return "Nenhum resultado encontrado na web."
-            url = resultados_links[0]['href']
-            print(f"Extraindo conteúdo de: {url}")
-            downloaded = fetch_url(url)
-            if downloaded:
-                texto_artigo = extract(downloaded, include_comments=False, include_tables=False)
-                return texto_artigo
-            return "Não foi possível extrair conteúdo da página."
+            # Busca até 3 resultados para ter backup
+            resultados_links = list(ddgs.text(query, max_results=3, region='br-pt'))
+            if not resultados_links:
+                print("[WEB SEARCH] Nenhum resultado encontrado no DuckDuckGo")
+                return None
+
+            print(f"[WEB SEARCH] Encontrados {len(resultados_links)} resultados")
+
+            # Tenta extrair conteúdo de cada resultado até conseguir
+            for i, resultado in enumerate(resultados_links):
+                url = resultado['href']
+                print(f"[WEB SEARCH] Tentativa {i+1}/{len(resultados_links)}: Extraindo de {url}")
+
+                try:
+                    downloaded = fetch_url(url)
+                    if downloaded:
+                        texto_artigo = extract(downloaded, include_comments=False, include_tables=False)
+
+                        # Verifica se extraiu conteúdo útil (mínimo 100 caracteres)
+                        if texto_artigo and len(texto_artigo.strip()) > 100:
+                            print(f"[WEB SEARCH] Sucesso! Extraídos {len(texto_artigo)} caracteres")
+                            return texto_artigo
+                        else:
+                            print(f"[WEB SEARCH] Conteúdo muito curto ou vazio, tentando próximo...")
+                    else:
+                        print(f"[WEB SEARCH] Falha no download, tentando próximo...")
+                except Exception as e:
+                    print(f"[WEB SEARCH] Erro ao processar {url}: {e}")
+                    continue
+
+            print("[WEB SEARCH] Não foi possível extrair conteúdo útil de nenhum resultado")
+            return None
+
     except Exception as e:
-        print(f"Erro na busca web: {e}")
-        return "Ocorreu um erro na busca web."
+        print(f"[WEB SEARCH] Erro na busca: {e}")
+        return None
 
 def obter_resposta_generativa(pergunta_atual, historico, contexto, fonte_do_contexto, idioma='pt'):
     """Gera uma resposta da IA baseada no contexto e histórico fornecidos."""
@@ -331,10 +346,22 @@ def ask_assistant():
 
     # 3. Verifica se a resposta do manual foi a mensagem de falha.
     if any(msg in resposta_final.lower() for msg in ["não encontrei", "no encontré", "didn't find"]):
-        print("Resposta não encontrada no manual. Partindo para a busca na web.")
+        print("[FALLBACK] Resposta não encontrada no manual. Partindo para a busca na web.")
         # Se foi, busca na web e gera uma nova resposta.
         contexto_web = buscar_na_web(pergunta_atual)
-        resposta_final = obter_resposta_generativa(pergunta_atual, historico, contexto_web, "Web", idioma_detectado)
+
+        if contexto_web:
+            print(f"[FALLBACK] Contexto da web obtido com sucesso ({len(contexto_web)} caracteres)")
+            resposta_final = obter_resposta_generativa(pergunta_atual, historico, contexto_web, "Web", idioma_detectado)
+        else:
+            print("[FALLBACK] Busca na web falhou. Informando usuário.")
+            # Mensagens quando a busca web falha
+            mensagens_falha_web = {
+                'pt': "Desculpe, não encontrei informações sobre isso no manual e também não consegui buscar na internet no momento. Por favor, tente reformular sua pergunta ou entre em contato com o suporte.",
+                'es': "Lo siento, no encontré información sobre esto en el manual y tampoco pude buscar en Internet en este momento. Por favor, intente reformular su pregunta o póngase en contacto con el soporte.",
+                'en': "Sorry, I couldn't find information about this in the manual and I was unable to search the internet at this time. Please try rephrasing your question or contact support."
+            }
+            resposta_final = mensagens_falha_web.get(idioma_detectado, mensagens_falha_web['pt'])
 
     return jsonify({"answer": resposta_final})
 

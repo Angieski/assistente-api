@@ -190,22 +190,34 @@ def buscar_na_web(pergunta, num_artigos=3):
     try:
         with DDGS() as ddgs:
             resultados_links = list(ddgs.text(query, max_results=5, region='br-pt'))
-            if not resultados_links: return "Nenhum resultado encontrado na web.", []
-            
+            if not resultados_links:
+                st.warning("Nenhum resultado encontrado no DuckDuckGo")
+                return None, []
+
             for i, link in enumerate(resultados_links[:num_artigos]):
                 url = link['href']
                 st.write(f"Lendo artigo {i+1}: {url}")
-                downloaded = fetch_url(url)
-                if downloaded:
-                    texto_artigo = extract(downloaded, include_comments=False, include_tables=False)
-                    if texto_artigo and len(texto_artigo) > 200:
-                        contexto_formatado = f"Fonte {i+1}: {link['title']}\nURL: {url}\nCONTEÚDO: {texto_artigo[:2500]}..."
-                        contextos_web.append(contexto_formatado)
-                        urls_usadas.append(link['href'])
+                try:
+                    downloaded = fetch_url(url)
+                    if downloaded:
+                        texto_artigo = extract(downloaded, include_comments=False, include_tables=False)
+                        if texto_artigo and len(texto_artigo) > 200:
+                            contexto_formatado = f"Fonte {i+1}: {link['title']}\nURL: {url}\nCONTEÚDO: {texto_artigo[:2500]}..."
+                            contextos_web.append(contexto_formatado)
+                            urls_usadas.append(link['href'])
+                except Exception as e:
+                    st.warning(f"Erro ao processar {url}: {str(e)}")
+                    continue
                 time.sleep(0.2)
-            if not contextos_web: return "Não foi possível extrair conteúdo útil.", []
+
+            if not contextos_web:
+                st.warning("Não foi possível extrair conteúdo útil de nenhum resultado")
+                return None, []
+
             return "\n\n===\n\n".join(contextos_web), urls_usadas
-    except Exception: return "Não foi possível buscar na web.", []
+    except Exception as e:
+        st.error(f"Erro na busca web: {str(e)}")
+        return None, []
 
 
 # --- Funções do "Especialista" Generativo ---
@@ -326,13 +338,23 @@ if prompt := st.chat_input("Qual é a sua dúvida sobre áudio?"):
             else:
                 with st.spinner("O manual não foi suficiente. Iniciando pesquisa aprofundada na web..."):
                     contexto_web, urls_usadas_na_resposta = buscar_na_web(prompt)
+
+                if contexto_web:
                     fonte_usada = "Web (Visão Geral de Múltiplos Artigos)"
 
-                with st.expander(f"🔬 Fonte Utilizada ({fonte_usada})"):
-                    st.text(contexto_web)
+                    with st.expander(f"🔬 Fonte Utilizada ({fonte_usada})"):
+                        st.text(contexto_web)
 
-                with st.spinner("O especialista está analisando os artigos e pensando na resposta..."):
-                    resposta_final = obter_resposta_generativa(prompt, contexto_web, fonte_usada, idioma_detectado)
+                    with st.spinner("O especialista está analisando os artigos e pensando na resposta..."):
+                        resposta_final = obter_resposta_generativa(prompt, contexto_web, fonte_usada, idioma_detectado)
+                else:
+                    # Busca web falhou
+                    mensagens_falha_web = {
+                        'pt': "Desculpe, não encontrei informações sobre isso no manual e também não consegui buscar na internet no momento. Por favor, tente reformular sua pergunta ou entre em contato com o suporte.",
+                        'es': "Lo siento, no encontré información sobre esto en el manual y tampoco pude buscar en Internet en este momento. Por favor, intente reformular su pregunta o póngase en contacto con el soporte.",
+                        'en': "Sorry, I couldn't find information about this in the manual and I was unable to search the internet at this time. Please try rephrasing your question or contact support."
+                    }
+                    resposta_final = mensagens_falha_web.get(idioma_detectado, mensagens_falha_web['pt'])
 
             if urls_usadas_na_resposta:
                 fontes_formatadas = "\n\n---\n*Fontes da web consultadas:*\n"
