@@ -8,6 +8,7 @@ from sentence_transformers import SentenceTransformer
 from duckduckgo_search import DDGS
 from trafilatura import fetch_url, extract
 import time
+import re
 
 # --- Configurações Iniciais ---
 st.set_page_config(page_title="Assistente Especialista IA", page_icon="🧠")
@@ -26,6 +27,137 @@ except Exception:
 
 
 # --- Funções de Cache e Busca ---
+
+def detectar_idioma(texto):
+    """Detecta o idioma do texto (pt, es, en) com alta precisão."""
+    texto_lower = texto.lower()
+    texto_com_espacos = f' {texto_lower} '
+
+    # Padrões EXCLUSIVOS de cada idioma (peso 5)
+    exclusivos_es = ['el ', ' la ', ' del ', ' al ', ' los ', ' las ', 'cuánto', 'cuanto', 'cómo', 'qué', 'está', 'cuál', 'cual']
+    exclusivos_pt = [' o ', ' a ', ' do ', ' da ', ' ao ', ' os ', ' as ', ' não', ' nao', ' são', ' sao', ' tem ', ' qual ', ' você', ' voce']
+    exclusivos_en = [' the ', ' does ', ' which ', ' that ', ' this ', ' these ', ' those ', ' have ', ' has ']
+
+    # Verbos típicos (peso 3)
+    verbos_es = ['cuesta', 'hacer', 'configurar', 'tiene']
+    verbos_pt = ['custa', 'fazer', 'configurar', 'tem']
+    verbos_en = ['cost', 'costs', 'make', 'configure', 'has', 'have']
+
+    # Palavras comuns (peso 1)
+    comuns_pt = ['para', 'com', 'em', 'de', 'como', 'que', 'por']
+    comuns_es = ['para', 'con', 'en', 'de', 'como', 'que', 'por']
+    comuns_en = ['to', 'for', 'in', 'of', 'how', 'what', 'with']
+
+    # Inicializa scores
+    score_pt = 0
+    score_es = 0
+    score_en = 0
+
+    # Conta exclusivos (peso alto)
+    score_es += sum(5 for palavra in exclusivos_es if palavra in texto_com_espacos)
+    score_pt += sum(5 for palavra in exclusivos_pt if palavra in texto_com_espacos)
+    score_en += sum(5 for palavra in exclusivos_en if palavra in texto_com_espacos)
+
+    # Conta verbos (peso médio)
+    score_es += sum(3 for verbo in verbos_es if verbo in texto_lower)
+    score_pt += sum(3 for verbo in verbos_pt if verbo in texto_lower)
+    score_en += sum(3 for verbo in verbos_en if verbo in texto_lower)
+
+    # Conta palavras comuns (peso baixo)
+    score_pt += sum(1 for palavra in comuns_pt if palavra in texto_com_espacos)
+    score_es += sum(1 for palavra in comuns_es if palavra in texto_com_espacos)
+    score_en += sum(1 for palavra in comuns_en if palavra in texto_com_espacos)
+
+    # Regras de desempate específicas
+    # Se tem artigos "el" ou "la" sozinhos, muito provável ser espanhol
+    if ' el ' in texto_com_espacos or ' los ' in texto_com_espacos:
+        score_es += 3
+    if ' del ' in texto_com_espacos or ' al ' in texto_com_espacos:
+        score_es += 3
+
+    # Se tem "the", muito provável ser inglês
+    if ' the ' in texto_com_espacos:
+        score_en += 3
+
+    # Se tem "o" ou "a" sozinhos seguidos de substantivo, provável ser português
+    if ' o ' in texto_com_espacos or ' os ' in texto_com_espacos:
+        score_pt += 2
+    if ' do ' in texto_com_espacos or ' da ' in texto_com_espacos or ' ao ' in texto_com_espacos:
+        score_pt += 3
+
+    # Retorna o idioma com maior score
+    if score_es > score_pt and score_es > score_en:
+        return 'es'
+    elif score_en > score_pt and score_en > score_es:
+        return 'en'
+    else:
+        return 'pt'  # Padrão é português
+
+def verificar_pergunta_sobre_valores(pergunta):
+    """Verifica se a pergunta é sobre valores/preços/licença em qualquer idioma."""
+    # Português
+    palavras_pt = ['valor', 'preco', 'preço', 'quanto custa', 'custa', 'custo',
+                   'licenca', 'licença', 'plano', 'planos', 'mensalidade',
+                   'assinatura', 'pagar', 'pagamento', 'reais', 'r$']
+    # Espanhol
+    palavras_es = ['valor', 'precio', 'cuánto cuesta', 'cuesta', 'costo',
+                   'licencia', 'plan', 'planes', 'mensualidad',
+                   'suscripción', 'pagar', 'pago']
+    # Inglês
+    palavras_en = ['value', 'price', 'how much', 'cost', 'costs',
+                   'license', 'plan', 'plans', 'monthly', 'subscription',
+                   'pay', 'payment', 'pricing']
+
+    pergunta_lower = pergunta.lower()
+    todas_palavras = palavras_pt + palavras_es + palavras_en
+    return any(palavra in pergunta_lower for palavra in todas_palavras)
+
+def obter_resposta_valores(idioma):
+    """Retorna a resposta sobre valores no idioma especificado."""
+    respostas = {
+        'pt': """Para informações sobre valores, planos e licenças do Console Mix, entre em contato diretamente com nossa equipe de suporte:
+
+📞 Telefones:
+• (42) 99985-3754
+• (42) 99848-8284
+
+🕒 Horário de Atendimento:
+Segunda a Sexta, das 9h às 18h (horário de Brasília)
+
+🌐 Site:
+consolemix.com.br/console
+
+Nossa equipe terá prazer em apresentar as melhores opções de planos para você!""",
+
+        'es': """Para información sobre precios, planes y licencias de Console Mix, póngase en contacto directamente con nuestro equipo de soporte:
+
+📞 Teléfonos:
+• (42) 99985-3754
+• (42) 99848-8284
+
+🕒 Horario de Atención:
+Lunes a Viernes, de 9h a 18h (horario de Brasilia)
+
+🌐 Sitio web:
+consolemix.com.br/console
+
+¡Nuestro equipo estará encantado de presentarle las mejores opciones de planes para usted!""",
+
+        'en': """For information about pricing, plans and licenses for Console Mix, please contact our support team directly:
+
+📞 Phone numbers:
+• (42) 99985-3754
+• (42) 99848-8284
+
+🕒 Business Hours:
+Monday to Friday, 9am to 6pm (Brasilia time)
+
+🌐 Website:
+consolemix.com.br/console
+
+Our team will be happy to present you with the best plan options!"""
+    }
+    return respostas.get(idioma, respostas['pt'])
 
 @st.cache_resource
 def carregar_modelo_embedding():
@@ -104,12 +236,28 @@ def contexto_e_relevante(pergunta, contexto):
         return False
 
 
-def obter_resposta_generativa(pergunta, contexto, fonte):
+def obter_resposta_generativa(pergunta, contexto, fonte, idioma='pt'):
+    # Instruções de idioma
+    instrucoes_idioma = {
+        'pt': "Leia o contexto e sintetize uma resposta clara e útil em português.",
+        'es': "Lea el contexto y sintetice una respuesta clara y útil en español.",
+        'en': "Read the context and synthesize a clear and helpful response in English."
+    }
+
+    mensagens_falha = {
+        'pt': "Não encontrei uma resposta para isso.",
+        'es': "No encontré una respuesta para esto.",
+        'en': "I didn't find an answer for this."
+    }
+
+    instrucao = instrucoes_idioma.get(idioma, instrucoes_idioma['pt'])
+    msg_falha = mensagens_falha.get(idioma, mensagens_falha['pt'])
+
     prompt = f"""
     Aja como um assistente técnico especialista. Sua tarefa é responder a PERGUNTA do usuário.
     A resposta DEVE ser baseada exclusivamente no CONTEXTO fornecido, que veio da fonte: '{fonte}'.
-    - Leia o contexto e sintetize uma resposta clara e útil em português.
-    - Não invente informações. Se a resposta não estiver no contexto, diga "Não encontrei uma resposta para isso.".
+    - {instrucao}
+    - Não invente informações. Se a resposta não estiver no contexto, diga "{msg_falha}".
 
     ---
     CONTEXTO:
@@ -155,35 +303,43 @@ if prompt := st.chat_input("Qual é a sua dúvida sobre áudio?"):
         resposta_final = ""
         urls_usadas_na_resposta = []
 
-        with st.spinner("Consultando o manual..."):
-            contexto_manual = buscar_contexto_local(prompt, modelo_embedding_instance, indice_faiss, chunks)
+        # --- DETECÇÃO DE IDIOMA ---
+        idioma_detectado = detectar_idioma(prompt)
 
-        # --- NOVA LÓGICA DE DECISÃO INTELIGENTE ---
-        if contexto_e_relevante(prompt, contexto_manual):
-            fonte_usada = "Manual Técnico"
-            contexto_final = contexto_manual
-            with st.expander(f"🔬 Fonte Utilizada ({fonte_usada})"):
-                st.text(contexto_final)
-            
-            with st.spinner("Encontrei uma resposta relevante no manual! Gerando..."):
-                resposta_final = obter_resposta_generativa(prompt, contexto_final, fonte_usada)
+        # --- VERIFICAÇÃO DE PERGUNTAS SOBRE VALORES ---
+        if verificar_pergunta_sobre_valores(prompt):
+            resposta_final = obter_resposta_valores(idioma_detectado)
+            st.markdown(resposta_final)
         else:
-            with st.spinner("O manual não foi suficiente. Iniciando pesquisa aprofundada na web..."):
-                contexto_web, urls_usadas_na_resposta = buscar_na_web(prompt)
-                fonte_usada = "Web (Visão Geral de Múltiplos Artigos)"
-            
-            with st.expander(f"🔬 Fonte Utilizada ({fonte_usada})"):
-                st.text(contexto_web)
+            with st.spinner("Consultando o manual..."):
+                contexto_manual = buscar_contexto_local(prompt, modelo_embedding_instance, indice_faiss, chunks)
 
-            with st.spinner("O especialista está analisando os artigos e pensando na resposta..."):
-                resposta_final = obter_resposta_generativa(prompt, contexto_web, fonte_usada)
+            # --- NOVA LÓGICA DE DECISÃO INTELIGENTE ---
+            if contexto_e_relevante(prompt, contexto_manual):
+                fonte_usada = "Manual Técnico"
+                contexto_final = contexto_manual
+                with st.expander(f"🔬 Fonte Utilizada ({fonte_usada})"):
+                    st.text(contexto_final)
 
-        if urls_usadas_na_resposta:
-            fontes_formatadas = "\n\n---\n*Fontes da web consultadas:*\n"
-            for url in urls_usadas_na_resposta:
-                fontes_formatadas += f"- {url}\n"
-            resposta_final += fontes_formatadas
-        
-        st.markdown(resposta_final)
-    
+                with st.spinner("Encontrei uma resposta relevante no manual! Gerando..."):
+                    resposta_final = obter_resposta_generativa(prompt, contexto_final, fonte_usada, idioma_detectado)
+            else:
+                with st.spinner("O manual não foi suficiente. Iniciando pesquisa aprofundada na web..."):
+                    contexto_web, urls_usadas_na_resposta = buscar_na_web(prompt)
+                    fonte_usada = "Web (Visão Geral de Múltiplos Artigos)"
+
+                with st.expander(f"🔬 Fonte Utilizada ({fonte_usada})"):
+                    st.text(contexto_web)
+
+                with st.spinner("O especialista está analisando os artigos e pensando na resposta..."):
+                    resposta_final = obter_resposta_generativa(prompt, contexto_web, fonte_usada, idioma_detectado)
+
+            if urls_usadas_na_resposta:
+                fontes_formatadas = "\n\n---\n*Fontes da web consultadas:*\n"
+                for url in urls_usadas_na_resposta:
+                    fontes_formatadas += f"- {url}\n"
+                resposta_final += fontes_formatadas
+
+            st.markdown(resposta_final)
+
     st.session_state.messages.append({"role": "assistant", "content": resposta_final})

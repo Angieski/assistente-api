@@ -14,3 +14,4 @@ diagnostico_texto_bruto.txt
 # Arquivos de configuração de editores de código (boa prática)
 .vscode/
 .idea/
+.claude/

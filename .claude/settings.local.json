@@ -3,7 +3,11 @@
     "allow": [
       "Bash(pip --version)",
       "WebFetch(domain:console.groq.com)",
-      "Bash(python test:*)"
+      "Bash(python test:*)",
+      "Bash(python test_valores.py:*)",
+      "Bash(findstr:*)",
+      "Bash(python:*)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

@@ -70,6 +70,4 @@ Até quantas ligações simultâneas é possível realizar com o Console? Se for
 
 É possível fazer troca de cena pelo Console? É possível sim, ele funciona exclusivamente com vMix, permitindo fazer trocas de cena e com a funcionalidade exclusiva de tela de preview.
 
-Quais os planos de licença disponíveis do Console Mix?O plano é mensal é de 450 reais, mas também há a opção de plano anual, onde você garante 20% de desconto.
-
 Quais integrações possui? Você pode integrar com vMix, VLC, BreakawayOne, Stereo Tool e outros sistemas.

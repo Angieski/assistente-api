@@ -9,6 +9,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pip install -r requirements.txt
 ```
 
+**Note:** `requirements.txt` contains minimal dependencies for the Flask API. For the Streamlit app, you'll also need:
+- `streamlit`
+- `faiss-cpu` (or `faiss-gpu`)
+- `sentence-transformers`
+- `numpy`
+- `pickle` (usually built-in)
+
 ### Running the Applications
 ```bash
 # Run the Flask API server (production-ready with cascading logic)
@@ -54,9 +61,9 @@ This is an AI assistant system with multiple interfaces designed to answer techn
 ### Key Technical Details
 
 **Knowledge Sources:**
-- Local manual: `manual_limpo.txt` (loaded into memory)
+- Local manual: `manual_limpo.txt` (loaded into memory for api.py; indexed with FAISS for app.py)
 - Web search: DuckDuckGo integration with content extraction via trafilatura
-- Knowledge base: `conhecimento/` directory contains the source manual
+- Knowledge base: `conhecimento/` directory contains a copy of the manual
 
 **AI Integration:**
 - Primary LLM: Groq API with LLaMA 3.1-8B Instant model (`llama-3.1-8b-instant`)
@@ -66,8 +73,11 @@ This is an AI assistant system with multiple interfaces designed to answer techn
 **Response Strategy:**
 - Manual-first approach: Always check local knowledge base first
 - Automatic fallback: Web search triggered when manual doesn't contain relevant information
-- Context-aware: Maintains conversation history for follow-up questions
+  - In api.py: Detects fallback by checking if response contains "não encontrei informações sobre isso" (api.py:118)
+  - In app.py: Uses a separate LLM call to evaluate context relevance before deciding (app.py:83-104)
+- Context-aware: Maintains conversation history for follow-up questions (api.py uses last 6 messages)
 - Portuguese-focused: All responses generated in Portuguese
+- Strict response rules: LLM instructed to only answer from provided context, not from prior knowledge
 
 ### File Structure
 - `api.py` - Main Flask API with cascading logic
@@ -78,10 +88,34 @@ This is an AI assistant system with multiple interfaces designed to answer techn
 - `conhecimento/` - Source knowledge directory
 - `requirements.txt` - Python dependencies
 
+### API Endpoints
+
+**POST /ask** - Main endpoint for questions
+- Request body:
+  ```json
+  {
+    "question": "string (required)",
+    "history": [{"role": "user|assistant", "content": "string"}] (optional)
+  }
+  ```
+- Response:
+  ```json
+  {
+    "answer": "string"
+  }
+  ```
+
+**GET /** - Health check endpoint
+- Returns: "API do assistente especialista (versão final com cascata) está no ar!"
+
+**CORS Configuration:**
+- Allowed origins for `/ask`: consolemix.com.br (http/https), localhost, 127.0.0.1
+- Modify origins in api.py:96 for production deployment
+
 ### Development Workflow
 1. Ensure `GROQ_API_KEY` is set in environment
 2. Install dependencies with `pip install -r requirements.txt`
-3. Run `python api.py` for the main API server
+3. Run `python api.py` for the main API server (default port: 5000)
 4. Use `python test_api.py` to test API functionality
 5. Open `chatbot.html` in browser to test the frontend interface
 
