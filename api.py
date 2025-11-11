@@ -45,19 +45,19 @@ def detectar_idioma(texto):
     texto_com_espacos = f' {texto_lower} '
 
     # Padrões EXCLUSIVOS de cada idioma (peso 5)
-    exclusivos_es = ['el ', ' la ', ' del ', ' al ', ' los ', ' las ', 'cuánto', 'cuanto', 'cómo', 'qué', 'está', 'cuál', 'cual']
-    exclusivos_pt = [' o ', ' a ', ' do ', ' da ', ' ao ', ' os ', ' as ', ' não', ' nao', ' são', ' sao', ' tem ', ' qual ', ' você', ' voce']
-    exclusivos_en = [' the ', ' does ', ' which ', ' that ', ' this ', ' these ', ' those ', ' have ', ' has ']
+    exclusivos_es = ['el ', ' la ', ' del ', ' al ', ' los ', ' las ', ' es ', ' son ', 'cuánto', 'cuanto', 'cómo', 'qué', 'que ', 'está', 'cuál', 'cual']
+    exclusivos_pt = [' o ', ' a ', ' do ', ' da ', ' ao ', ' os ', ' as ', ' não', ' nao', ' são', ' sao', ' tem ', ' qual ', ' você', ' voce', ' é ']
+    exclusivos_en = [' the ', ' does ', ' which ', ' that ', ' this ', ' these ', ' those ', ' have ', ' has ', ' is ', ' are ']
 
     # Verbos típicos (peso 3)
-    verbos_es = ['cuesta', 'hacer', 'configurar', 'tiene']
-    verbos_pt = ['custa', 'fazer', 'configurar', 'tem']
-    verbos_en = ['cost', 'costs', 'make', 'configure', 'has', 'have']
+    verbos_es = ['cuesta', 'hacer', 'configurar', 'tiene', 'es']
+    verbos_pt = ['custa', 'fazer', 'configurar', 'tem', 'é']
+    verbos_en = ['cost', 'costs', 'make', 'configure', 'has', 'have', 'is', 'are']
 
     # Palavras comuns (peso 1)
-    comuns_pt = ['para', 'com', 'em', 'de', 'como', 'que', 'por']
-    comuns_es = ['para', 'con', 'en', 'de', 'como', 'que', 'por']
-    comuns_en = ['to', 'for', 'in', 'of', 'how', 'what', 'with']
+    comuns_pt = ['para', 'com', 'em', 'de', 'como', 'por']
+    comuns_es = ['para', 'con', 'en', 'de', 'como', 'por']
+    comuns_en = ['to', 'for', 'in', 'of', 'how', 'with']
 
     # Inicializa scores
     score_pt = 0
@@ -354,14 +354,22 @@ def ask_assistant():
             print(f"[FALLBACK] Contexto da web obtido com sucesso ({len(contexto_web)} caracteres)")
             resposta_final = obter_resposta_generativa(pergunta_atual, historico, contexto_web, "Web", idioma_detectado)
         else:
-            print("[FALLBACK] Busca na web falhou. Informando usuário.")
+            print(f"[FALLBACK] Busca na web falhou. Idioma detectado: {idioma_detectado}")
+            print(f"[FALLBACK] Pergunta original: '{pergunta_atual}'")
+
+            # Re-detecta idioma para garantir precisão
+            idioma_final = detectar_idioma(pergunta_atual)
+            print(f"[FALLBACK] Idioma re-detectado: {idioma_final}")
+
             # Mensagens quando a busca web falha
             mensagens_falha_web = {
                 'pt': "Desculpe, não encontrei informações sobre isso no manual e também não consegui buscar na internet no momento. Por favor, tente reformular sua pergunta ou entre em contato com o suporte.",
                 'es': "Lo siento, no encontré información sobre esto en el manual y tampoco pude buscar en Internet en este momento. Por favor, intente reformular su pregunta o póngase en contacto con el soporte.",
                 'en': "Sorry, I couldn't find information about this in the manual and I was unable to search the internet at this time. Please try rephrasing your question or contact support."
             }
-            resposta_final = mensagens_falha_web.get(idioma_detectado, mensagens_falha_web['pt'])
+            resposta_final = mensagens_falha_web.get(idioma_final, mensagens_falha_web['pt'])
+            print(f"[FALLBACK] Mensagem selecionada para idioma '{idioma_final}'")
+
 
     return jsonify({"answer": resposta_final})
 
